@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biblioteca Municipal — Conectando…</title>
+<style>
+  :root{--navy:#123a63;--accent:#1f8a5b;--paper:#eef2f6;--line:#d6deea;--muted:#5b708c;--alert:#c0392b}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+       background:linear-gradient(135deg,#0b2037,#123a63);color:#fff;padding:24px}
+  .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
+        border-radius:20px;padding:40px 34px;max-width:440px;width:100%;text-align:center;
+        box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  h1{margin:0 0 6px;font-size:22px}
+  .sub{color:#bcd0e6;font-size:14px;margin:0 0 26px}
+  .spinner{width:52px;height:52px;margin:0 auto 22px;border:5px solid rgba(255,255,255,.2);
+           border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .status{font-size:14px;color:#eaf1f8;min-height:22px}
+  .btn{display:inline-block;margin-top:22px;padding:12px 22px;border-radius:12px;border:none;
+       background:var(--accent);color:#fff;font:inherit;font-size:15px;font-weight:600;
+       cursor:pointer;text-decoration:none;transition:.15s}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.4);margin-left:8px}
+  .err{color:#ffb4ab}
+  .hint{margin-top:18px;font-size:12px;color:#9fb4cc;line-height:1.5}
+  a.link{color:#8fd0ff}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner" id="spinner"></div>
+    <h1>Biblioteca Municipal</h1>
+    <p class="sub">Conectando ao servidor…</p>
+    <div class="status" id="status">Buscando o endereço atual…</div>
+    <div id="actions"></div>
+    <div class="hint" id="hint"></div>
+  </div>
+
+<script>
+// Nome do arquivo que guarda o link atual do túnel (atualizado pelo .bat).
+// Fica no mesmo repositório do GitHub Pages.
+const URL_FILE = "url.json";
+
+// Evita cache do GitHub Pages/CDN acrescentando um parâmetro único.
+function noCache(u){ return u + (u.includes("?")?"&":"?") + "t=" + Date.now(); }
+
+const statusEl = document.getElementById("status");
+const actionsEl = document.getElementById("actions");
+const spinnerEl = document.getElementById("spinner");
+const hintEl = document.getElementById("hint");
+
+function fail(msg){
+  spinnerEl.style.display = "none";
+  statusEl.className = "status err";
+  statusEl.textContent = msg;
+  actionsEl.innerHTML = '<button class="btn" onclick="location.reload()">Tentar de novo</button>';
+  hintEl.innerHTML = "Se o problema continuar, verifique se o computador da biblioteca está ligado e com o servidor e o túnel rodando.";
+}
+
+function go(url){
+  statusEl.textContent = "Servidor encontrado! Redirecionando…";
+  spinnerEl.style.display = "none";
+  // Botão manual, caso o redirecionamento automático seja bloqueado.
+  actionsEl.innerHTML = '<a class="btn" href="'+url+'">Abrir agora</a>';
+  hintEl.innerHTML = 'Se não abrir sozinho, clique no botão acima.<br><span style="opacity:.7">'+url+'</span>';
+  // Redireciona automaticamente.
+  setTimeout(()=>{ window.location.href = url; }, 600);
+}
+
+async function connect(){
+  try{
+    const resp = await fetch(noCache(URL_FILE), {cache:"no-store"});
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    const data = await resp.json();
+    const url = (data && data.url || "").trim();
+    if(!url || !/^https?:\/\//i.test(url)) throw new Error("URL inválida no "+URL_FILE);
+    go(url);
+  }catch(e){
+    fail("Não foi possível encontrar o servidor no momento.");
+    console.error(e);
+  }
+}
+
+connect();
+</script>
+</body>
+</html>
